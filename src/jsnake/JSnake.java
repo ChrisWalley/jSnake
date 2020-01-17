@@ -48,7 +48,6 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
     int width;
     int height;
     int borderSize;
-    int warning;
     boolean dead = false;
     boolean red = true;
     boolean pause = false;
@@ -75,25 +74,22 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
 
     public static void main(String... args)
       {
-        int choice = JOptionPane.showConfirmDialog(null, "Are you sensitive to flashing lights?", "Epilepsy Warning", JOptionPane.YES_NO_OPTION);
-        JSnake game = new JSnake(Toolkit.getDefaultToolkit().getScreenSize(), 10, choice);
+        JSnake game = new JSnake(Toolkit.getDefaultToolkit().getScreenSize(), 10);
         game.start();
       }
 
-    public JSnake(int width, int height, int borderSize, int warning)
+    public JSnake(int width, int height, int borderSize)
       {
         this.width = width;
         this.height = height;
         this.borderSize = borderSize;
-        this.warning = warning;
       }
 
-    public JSnake(Dimension d, int borderSize, int warning)
+    public JSnake(Dimension d, int borderSize)
       {
         this.width = d.width;
         this.height = d.height;
         this.borderSize = borderSize;
-        this.warning = warning;
       }
 
     public void start()
@@ -163,7 +159,7 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
         g.setColor(Color.WHITE);
         g.fillRect(borderSize, borderSize, width - 2 * borderSize, height - 2 * borderSize);
         g.setFont(new Font("Score", 0, 10));
-        g.drawString("Score: " + score, borderSize, borderSize);
+        g.drawString("Score: " + score, borderSize, borderSize-1);
         g.setColor(Color.BLACK);
         if (!dead)
           {
@@ -178,25 +174,30 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
                 addFood();
               }
 
-            for (ColorPoly cp : snake)
+            for (int loop = 1; loop < snake.size(); loop++)
               {
-                g.setColor(cp.col);
+                ColorPoly cp = snake.get(loop);
+                float grad = 1.0f * loop / snake.size();
+                g.setColor(getColor(grad));
+                //g.setColor(cp.col);
                 g.fillPolygon(cp.p);
                 g.setColor(Color.BLACK);
                 g.drawPolygon(cp.p);
+              }
+            if (snake.size() > 1)
+              {
+                System.out.println("");
               }
 
             g.setColor(Color.GREEN.darker());
             g.fillPolygon(snake.get(0).p);
             g.setColor(Color.BLACK);
             g.drawPolygon(snake.get(0).p);
-
             g.fillPolygon(food);
           } else
           {
             kill(g);
           }
-
       }
 
     public Polygon makeRect(int x, int y, int width, int height)
@@ -216,15 +217,15 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
         ColorPoly tail = snake.get(snake.size() - 1);
         for (int loop = snake.size() - 1; loop > 0; loop--)
           {
-            snake.set(loop, snake.get(loop - 1));
+            snake.get(loop).p = snake.get(loop - 1).p;
 
             if (snake.get(loop).p.intersects(food.getBounds2D()))
               {
                 food = null;
-                addFood();
                 moveSpeed -= 2;
                 score += 10;
-                float gradient = (System.currentTimeMillis() - foodTime) / foodSpeed;
+                long time = System.currentTimeMillis() - foodTime;
+                float gradient = time / (1.0f * foodSpeed);
                 //1 Full red
                 //0 Full green
                 ColorPoly newTail = new ColorPoly(new Polygon(tail.p.xpoints, tail.p.ypoints, tail.p.npoints), getColor(gradient));
@@ -248,10 +249,11 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
         if (newHeadPoly.intersects(food.getBounds2D()))
           {
             food = null;
-            addFood();
             moveSpeed -= 2;
             score += 10;
-            float gradient = (System.currentTimeMillis() - foodTime) / (1.0f*foodSpeed);
+            long now = System.currentTimeMillis();
+            long time = now - foodTime;
+            float gradient = time / (1.0f * foodSpeed);
             //1 Full red
             //0 Full green
             ColorPoly newTail = new ColorPoly(new Polygon(tail.p.xpoints, tail.p.ypoints, tail.p.npoints), getColor(gradient));
@@ -263,10 +265,10 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
 
         for (int loop = 0; loop < 4; loop++)
           {
-            if (snake.get(0).p.xpoints[loop] <= borderSize
-                    || snake.get(0).p.xpoints[loop] >= width - 2 * borderSize
-                    || snake.get(0).p.ypoints[loop] <= borderSize
-                    || snake.get(0).p.ypoints[loop] >= height - 2 * borderSize)
+            if (snake.get(0).p.xpoints[loop] < borderSize
+                    || snake.get(0).p.xpoints[loop] > width - borderSize
+                    || snake.get(0).p.ypoints[loop] < borderSize
+                    || snake.get(0).p.ypoints[loop] > height - borderSize)
               {
                 dead = true;
               }
@@ -304,7 +306,7 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
 
     public void kill(Graphics g)
       {
-        if (warning == JOptionPane.NO_OPTION)
+        if (false)
           {
             red = !red;
             if (red)
@@ -363,6 +365,10 @@ public class JSnake extends JFrame implements KeyListener, ActionListener, Mouse
 
     public Color getColor(float grad)
       {
+        if (grad >= 0.5f)
+          {
+            System.out.println("");
+          }
         //1 full red
         //0 full green
         float red = grad;
